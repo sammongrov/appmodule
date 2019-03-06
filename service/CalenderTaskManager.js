@@ -1,5 +1,5 @@
 import AppUtil from '@mongrov/utils';
-import Errors from '../../constants/errors';
+import {Errors} from  '@mongrov/config';
 import { Application } from '@mongrov/config';
 
 const MODULE = 'CalenderTaskManager';

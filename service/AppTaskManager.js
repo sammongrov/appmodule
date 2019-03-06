@@ -1,8 +1,8 @@
 import AppUtil from '@mongrov/utils';
 // import AppService from './AppService';
 import {Config} from '@mongrov/config';
-import Errors from '../../constants/errors';
-import PushService from '../../push/PushService';
+import {Errors} from  '@mongrov/config';
+import PushService from '../../../src/push/PushService';
 // import { Module } from 'module';
 // import { Module } from 'module';
 
