@@ -1,6 +1,6 @@
 import Realm from 'realm';
 import md5 from 'react-native-md5';
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import App from './model/App';
 import Setting from './model/Setting';
 import Errors from './model/Errors';

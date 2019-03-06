@@ -1,5 +1,5 @@
 // import { NetInfo, AppState } from 'react-native';
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import queueFactory from 'react-native-queue';
 import AppTaskManager from './service/AppTaskManager';
 import ChatTaskManager from './service/ChatTaskManager';

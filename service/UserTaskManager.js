@@ -1,4 +1,4 @@
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import UserService from './UserService';
 import Constants from '../model/constants';
 

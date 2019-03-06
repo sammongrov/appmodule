@@ -1,7 +1,7 @@
 /*
 * app master/global holder
 */
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import Constants from './constants';
 import { Application } from '@mongrov/config';
 

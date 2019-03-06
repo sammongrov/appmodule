@@ -1,4 +1,4 @@
-import AppUtil from '@utils'; /* eslint-disable-line */
+import AppUtil from '@mongrov/utils'; /* eslint-disable-line */
 import BoardTaskManager from '../BoardTaskManager';
 import TaskManager from '../../TaskManager';
 import DBManager from '../../DBManager';

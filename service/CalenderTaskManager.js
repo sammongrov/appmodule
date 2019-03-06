@@ -1,4 +1,4 @@
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import Errors from '../../constants/errors';
 import { Application } from '@mongrov/config';
 

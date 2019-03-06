@@ -1,4 +1,4 @@
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 
 const JOB_FETCH_USER_TASKS = 'FetchUserTasks';
 const JOB_FETCH_BOARD_TASKS = 'FetchBoardTasks';

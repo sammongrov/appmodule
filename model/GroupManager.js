@@ -3,7 +3,7 @@
  */
 import emoji from 'node-emoji';
 import Random from 'react-native-meteor/lib/Random';
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import CodePush from 'react-native-code-push';
 // import PushNotification from 'react-native-push-notification';
 // import InCallManager from 'react-native-incall-manager';

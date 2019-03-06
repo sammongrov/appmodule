@@ -1,4 +1,4 @@
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import ChatService from './ChatService';
 import { Application } from '@mongrov/config';
 import Constants from '../model/constants';

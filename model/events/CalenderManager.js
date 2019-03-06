@@ -1,4 +1,4 @@
-// import AppUtil from '@utils';
+// import AppUtil from '@mongrov/utils';
 import icaljs from 'ical.js';
 import _ from 'lodash';
 import moment from 'moment';
