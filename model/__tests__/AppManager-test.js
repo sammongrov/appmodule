@@ -6,7 +6,7 @@ import 'react-native';
 import AppManager from '../AppManager';
 import Realm from './_realm';
 import Constants from '../constants';
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 
 // const AppSchema = {
 //   name: Constants.App,

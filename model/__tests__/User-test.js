@@ -1,4 +1,4 @@
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 import User from '../User';
 
 const user = new User();

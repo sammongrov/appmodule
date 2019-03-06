@@ -2,7 +2,7 @@ import 'react-native';
 import Realm from './_realm';
 
 import Constants from '../constants';
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 
 // imports for mocked modules
 

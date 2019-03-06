@@ -1,7 +1,7 @@
 import CalenderTaskManager from '../CalenderTaskManager';
 import TaskManager from '../../TaskManager';
 
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 
 const RC = {};
 TaskManager.provider = RC;

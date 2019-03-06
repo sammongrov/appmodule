@@ -1,4 +1,4 @@
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 import Group from '../Group';
 import Constants from '../constants';
 

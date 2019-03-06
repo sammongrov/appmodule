@@ -1,7 +1,7 @@
 import InCallManager from 'react-native-incall-manager';
 import PushNotification from 'react-native-push-notification';
 import ChatService from '../ChatService';
-import Application from '../../../constants/config';
+import { Application } from '@mongrov/config';
 
 jest.mock('react-native-incall-manager', () => ({
   startRingtone: jest.fn(),
