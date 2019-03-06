@@ -1,7 +1,7 @@
 import AppUtil from '@utils';
 import InCallManager from 'react-native-incall-manager';
 import PushNotification from 'react-native-push-notification';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 
 const Module = 'ChatService';
 

@@ -1,6 +1,6 @@
 import AppUtil from '@utils';
 import ChatService from './ChatService';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 import Constants from '../model/constants';
 
 // const JOB_CHAT = 'ChatList';

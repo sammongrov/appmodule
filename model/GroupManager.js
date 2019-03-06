@@ -8,7 +8,7 @@ import CodePush from 'react-native-code-push';
 // import PushNotification from 'react-native-push-notification';
 // import InCallManager from 'react-native-incall-manager';
 import Constants from './constants';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 // import { GoogleAnalyticsTracker } from 'react-native-google-analytics-bridge';
 
 const MODULE = 'GroupManager';

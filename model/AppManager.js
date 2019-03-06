@@ -3,7 +3,7 @@
 */
 import AppUtil from '@utils';
 import Constants from './constants';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 
 const Module = 'AppManager';
 

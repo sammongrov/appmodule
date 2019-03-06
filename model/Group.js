@@ -3,7 +3,7 @@
  */
 
 import Constants from './constants';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 
 const GroupSchema = {
   name: Constants.Group,

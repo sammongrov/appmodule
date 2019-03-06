@@ -1,6 +1,6 @@
 import AppUtil from '@utils';
 import Errors from '../../constants/errors';
-import Application from '../../constants/config';
+import { Application } from '@mongrov/config';
 
 const MODULE = 'CalenderTaskManager';
 const { FETCH_CALENDER } = Application.JOBNAME;
