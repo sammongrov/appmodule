@@ -1,3 +1,4 @@
 {
-  "name": "@appModule"
+  "name": "@appModule",
+  "version" :"0.0.1"
 }
