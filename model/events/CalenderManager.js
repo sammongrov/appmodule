@@ -3,7 +3,7 @@ import icaljs from 'ical.js';
 import _ from 'lodash';
 import moment from 'moment';
 import Constants from '../constants';
-import Config from '../../../constants/config';
+import {Config} from '@mongrov/config';
 
 export default class CalenderManager {
   constructor(realm, taskManager) {
