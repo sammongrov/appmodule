@@ -2,7 +2,7 @@
  * User Manager class
  */
 import _ from 'lodash';
-import AppUtil from '@utils';
+import AppUtil from '@mongrov/utils';
 import Constants from '../constants';
 
 const MODULE = 'addAllChecklists';
