@@ -27,8 +27,6 @@ const {
   JOB_DELETE_OFFLINE_MESSAGE,
   JOB_SEND_READ_NOTIFICATION,
   JOB_LIKE_MESSAGE,
-  JOB_FETCH_BACKGROUND_GROUP,
-  JOB_FETCH_BACKGROUND_MESSAGE,
 } = Application.JOBNAME;
 
 export default class ChatTaskManager {
@@ -47,7 +45,6 @@ export default class ChatTaskManager {
       this._sendingDeleted = {};
       this._fetchChatListInProgress = false;
       this.subscribetoUserChange = false;
-      this._fetchBackgroundGroups = false;
     }
   }
 
@@ -67,8 +64,6 @@ export default class ChatTaskManager {
     this.initWorker(JOB_SEARCH_GROUP, 10, this.searchUserOrGroup);
     this.initWorker(JOB_SEND_READ_NOTIFICATION, 1, this.setGroupMessagesAsRead);
     this.initWorker(JOB_LIKE_MESSAGE, 5, this._setLike);
-    this.initWorker(JOB_FETCH_BACKGROUND_GROUP, 1, this._getBackgroundGroups);
-    this.initWorker(JOB_FETCH_BACKGROUND_MESSAGE, 10, this._getBackgroundMessages);
     // this.initWorker(PUTUSERJOBNAME, 10, this.addUser);
     // this.initWorker(JOB_FETCH_USER, 1, this.getUser);
   };
@@ -145,8 +140,8 @@ export default class ChatTaskManager {
     this._taskManager.queue.createJob(JOB_GET_IMAGE_URL, msg);
   };
 
-  uploadMediaJob = (data, rid, isImage, desc) => {
-    const args = { data, rid, isImage, desc };
+  uploadMediaJob = (data, rid, isImage, desc, replyMessageId) => {
+    const args = { data, rid, isImage, desc, replyMessageId };
     this._taskManager.queue.createJob(JOB_UPLOAD_FILE, args);
   };
 
@@ -212,14 +207,6 @@ export default class ChatTaskManager {
     this._taskManager.queue.createJob(JOB_LIKE_MESSAGE, messageId);
   };
 
-  fetchBackgroundGroupJob = () => {
-    this._taskManager.queue.createJob(JOB_FETCH_BACKGROUND_GROUP);
-  };
-
-  fetchBackgroundMessageJob = (group) => {
-    this._taskManager.queue.createJob(JOB_FETCH_BACKGROUND_MESSAGE, group);
-  };
-
   uploadMedia = async (args) => {
     try {
       const { app } = this._appManager;
@@ -228,7 +215,25 @@ export default class ChatTaskManager {
 
       const maxFileSize =
         this._appManager.getSettingsValue('FileUpload_MaxFileSize').value || '52428800';
-      const message = { _id: mediaMessage._id };
+
+      // build a threaded message text
+      let replyMessageText;
+      if (mediaMessage.isReply) {
+        const serverURL = this._appManager.app.host;
+        const groupObj = this._groupManager.findById(mediaMessage.group);
+        if (groupObj && serverURL) {
+          mediaMessage.text = args[0].desc && '';
+          // console.log ('MEDIA MESSAGE TEXT', mediaMessage.text);
+          replyMessageText = this._groupManager.buildReplyTemplate({
+            groupObj,
+            replyMsgId: mediaMessage.replyMessageId,
+            message: mediaMessage,
+            serverURL,
+          });
+        }
+      }
+      // console.log('REPLY MESSAGE TEXT', replyMessageText);
+      const message = { _id: mediaMessage._id, text: replyMessageText };
       const _args = { ...args[0], maxFileSize, message };
 
       if (app.isServiceConnected) {
@@ -744,76 +749,6 @@ export default class ChatTaskManager {
       this._provider.setLikeReaction(messageId);
     } catch (error) {
       AppUtil.debug(`ERROR IN SENDING LIKE FOR MESSAGE ${error}`, MODULE);
-    }
-  };
-
-  _getBackgroundGroups = async () => {
-    const { loggedInUser } = this._userManager;
-    // console.log('FETCH BACKGROUND GROUPS', this._fetchBackgroundGroups);
-    if (loggedInUser && !this._fetchBackgroundGroups) {
-      this._fetchBackgroundGroups = true;
-      // console.log('Getting Messages');
-      try {
-        const { lastSync } = this._appManager.app;
-        const groupList = await this._provider.fetchChannels(loggedInUser, lastSync);
-        await this._groupManager.addAll(groupList);
-        const groupListLocal = this._groupManager.sortedList;
-        this.bgGroupLength = Object.keys(groupListLocal).length;
-        Object.keys(groupListLocal).forEach(async (index) => {
-          try {
-            this.fetchBackgroundMessageJob(groupListLocal[index]);
-          } catch (error) {
-            AppUtil.debug(`ERROR IN ADDING MESSAGE ${error}, _getBackgroundGroups`, MODULE);
-          }
-        });
-      } catch (error) {
-        AppUtil.debug(`ERROR IN GET BACKGROUND GROUPS ${error}`);
-        const errObj = {
-          _id: JOB_CHAT,
-          desc: error.toString(),
-          code: '301',
-        };
-        this._appManager.logError(errObj);
-      } finally {
-        this._fetchBackgroundGroups = false;
-      }
-    }
-  };
-
-  _getBackgroundMessages = async (arg) => {
-    let groupObj;
-    try {
-      // console.log('FETCHING GROUP MESSAGES');
-      const [{ _id }] = arg;
-      const lastMessage = await this._groupManager.getLastMessage(_id);
-      const lastMessageAt = lastMessage ? lastMessage.createdAt : null;
-      const roomInfo = {
-        rid: _id,
-        lastMessageAt,
-        numberOfMessage: FETCH_CURRENT_GROUP_MIN_MSGS,
-      };
-      const msg = await this._provider.fetchCurrentRoomMessages(roomInfo);
-      if (!lastMessageAt) {
-        if (msg && msg.messages.length > 0) {
-          groupObj = await this._groupManager.addBulkMessages(msg.messages);
-        }
-        this.bgGroupLength -= 1;
-      } else if (msg && lastMessageAt) {
-        groupObj = await this._groupManager.addBulkMessages(msg);
-        this.bgGroupLength -= 1;
-      }
-      // console.log('BG-GROUP-LENGTH', this.bgGroupLength);
-      if (this.bgGroupLength === 0) {
-        this._fetchBackgroundGroups = false;
-      }
-      return groupObj;
-    } catch (error) {
-      const errObj = {
-        _id: JOB_FETCH_MESSAGE,
-        desc: error.toString() || 'Fetch Channel Failed',
-        code: '301',
-      };
-      this._appManager.logError(errObj);
     }
   };
 }

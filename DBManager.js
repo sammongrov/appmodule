@@ -48,7 +48,7 @@ const DBSchema = {
     Wallet,
     Calender,
   ],
-  schemaVersion: 18,
+  schemaVersion: 19,
   migration: () => {},
 };
 

@@ -102,8 +102,6 @@ const JOB_DELETE_MESSAGE = 'DeleteMessage';
 const JOB_SEARCH_GROUP = 'SearchGroup';
 const JOB_DELETE_OFFLINE_MESSAGE = 'DeleteOfflineMessage';
 const JOB_SEND_READ_NOTIFICATION = 'SendReadNotification';
-const JOB_FETCH_BACKGROUND_GROUP = 'FetchBackgroundGroup';
-const JOB_FETCH_BACKGROUND_MESSAGE = 'FetchBackgroundMessage';
 const JOB_LIKE_MESSAGE = 'LikeMessage';
 
 TaskManager.provider = RC;
@@ -589,29 +587,6 @@ it('chatTaskManager calls deleteMessageJob', () => {
   expect(onSuccess.mock.calls.length).toBe(1);
 });
 
-it('chatTaskManager calls fetchBackgroundGroupJob', () => {
-  const onSuccess = jest.fn();
-  const onFailed = jest.fn();
-  TaskManager.queue.getWorker(JOB_FETCH_BACKGROUND_GROUP).options = {
-    onSuccess,
-    onFailed,
-  };
-  chatTaskManager.fetchBackgroundGroupJob();
-  expect(onSuccess.mock.calls.length).toBe(1);
-});
-
-it('chatTaskManager calls fetchBackgroundMessageJob', () => {
-  const group = 'XC12589Vb';
-  const onSuccess = jest.fn();
-  const onFailed = jest.fn();
-  TaskManager.queue.getWorker(JOB_FETCH_BACKGROUND_MESSAGE).options = {
-    onSuccess,
-    onFailed,
-  };
-  chatTaskManager.fetchBackgroundMessageJob(group);
-  expect(onSuccess.mock.calls.length).toBe(1);
-});
-
 it('chatTaskManager calls searchGroupJob', () => {
   const searchKey = 'Woman-Boss';
   const onSuccess = jest.fn();
@@ -778,14 +753,12 @@ describe('chatTaskManager _loadEarlierMessageWorker message', () => {
   });
 });
 
-it('chatTaskManager file upload rejects with error', () => {
+it('chatTaskManager file upload rejects with error', async () => {
   appManager.getSettingsValue = () => ({ value: '62428899' });
-  this.fileUploadCallback = () => {};
   RC.uploadFile = jest.fn(() => Promise.reject());
   const data = { uri: 'X:/path/to/file' };
-  const groupId = 'XYZ1235689';
+  const rid = 'XYZ1235689';
   const desc = 'good morning!';
-  const callback = () => {};
   const messageX = {
     text: 'good evening!',
     _id: 'AAA-111-TTT-7778',
@@ -794,18 +767,17 @@ it('chatTaskManager file upload rejects with error', () => {
   appManager.logError = jest.fn(() => true);
   groupManager.buildFileMessage = jest.fn(() => messageX);
   appManager.app = { isServiceConnected: true };
-  chatTaskManager.uploadMedia(data, groupId, true, desc, callback);
+  expect.assertions(1);
+  await chatTaskManager.uploadMedia([{ data, rid, isImage: true, desc }]);
   expect(RC.uploadFile.mock.calls.length).toBe(1);
 });
 
-it('chatTaskManager uploads a file', () => {
+it('chatTaskManager uploads a file', async () => {
   appManager.getSettingsValue = () => ({ value: null });
-  this.fileUploadCallback = () => {};
   RC.uploadFile = jest.fn(() => Promise.resolve());
   const data = { uri: 'X:/path/to/file' };
-  const groupId = 'XYZ1235689';
+  const rid = 'XYZ1235689';
   const desc = 'good morning!';
-  const callback = () => {};
   const messageX = {
     text: 'good evening!',
     _id: 'AAA-111-TTT-7778',
@@ -814,21 +786,21 @@ it('chatTaskManager uploads a file', () => {
   appManager.logError = jest.fn(() => true);
   groupManager.buildFileMessage = jest.fn(() => messageX);
   groupManager.addMessageToRealmOnly = jest.fn();
-
   appManager.app = { isServiceConnected: true };
-  chatTaskManager.uploadMedia(data, groupId, true, desc, callback);
+  expect.assertions(3);
+  await chatTaskManager.uploadMedia([{ data, rid, isImage: true, desc }]);
+  expect(groupManager.buildFileMessage).toBeCalled();
+  expect(groupManager.addMessageToRealmOnly).toBeCalled();
   expect(RC.uploadFile.mock.calls.length).toBe(1);
 });
 
-it('chatTaskManager cannot upload a file, no connection', () => {
+it('chatTaskManager cannot upload a file, no connection', async () => {
   appManager.app = { isServiceConnected: false };
   appManager.getSettingsValue = () => ({ value: null });
-  this.fileUploadCallback = () => {};
   RC.uploadFile = jest.fn(() => Promise.resolve());
   const data = { uri: 'X:/path/to/file' };
-  const groupId = 'XYZ1235689';
+  const rid = 'XYZ1235689';
   const desc = 'good morning!';
-  const callback = () => {};
   const messageX = {
     text: 'good evening!',
     _id: 'AAA-111-TTT-7778',
@@ -837,9 +809,60 @@ it('chatTaskManager cannot upload a file, no connection', () => {
   appManager.logError = jest.fn(() => true);
   groupManager.buildFileMessage = jest.fn(() => messageX);
   groupManager.addMessageToRealmOnly = jest.fn();
-
-  chatTaskManager.uploadMedia(data, groupId, true, desc, callback);
+  await chatTaskManager.uploadMedia([{ data, rid, isImage: true, desc }]);
   expect(RC.uploadFile.mock.calls.length).toBe(0);
+});
+
+it('chatTaskManager uploads a file reply', async () => {
+  appManager.getSettingsValue = () => ({ value: null });
+  RC.uploadFile = jest.fn(() => Promise.resolve());
+  const data = { uri: 'X:/path/to/file' };
+  const rid = 'XYZ1235689';
+  const desc = 'good morning!';
+  const replyMessageId = 'OOO125894n';
+  const messageX = {
+    text: 'good evening!',
+    _id: 'AAA-111-TTT-7778',
+    createdAt: new Date(),
+    isReply: true,
+  };
+  appManager.logError = jest.fn(() => true);
+  groupManager.buildFileMessage = jest.fn(() => messageX);
+  groupManager.addMessageToRealmOnly = jest.fn();
+  groupManager.findById = jest.fn(() => ({ _id: '78NpI89X236fy' }));
+  groupManager.buildReplyTemplate = jest.fn();
+  appManager.app = { isServiceConnected: true, host: 'demo.mongrov.com' };
+  expect.assertions(3);
+  await chatTaskManager.uploadMedia([{ data, rid, isImage: true, desc, replyMessageId }]);
+  expect(groupManager.findById).toBeCalled();
+  expect(groupManager.buildReplyTemplate).toBeCalled();
+  expect(RC.uploadFile.mock.calls.length).toBe(1);
+});
+
+it('chatTaskManager uploads a file reply - no group object', async () => {
+  appManager.getSettingsValue = () => ({ value: null });
+  RC.uploadFile = jest.fn(() => Promise.resolve());
+  const data = { uri: 'X:/path/to/file' };
+  const rid = 'XYZ1235689';
+  const desc = 'good morning!';
+  const replyMessageId = 'OOO125894n';
+  const messageX = {
+    text: 'good evening!',
+    _id: 'AAA-111-TTT-7778',
+    createdAt: new Date(),
+    isReply: true,
+  };
+  appManager.logError = jest.fn(() => true);
+  groupManager.buildFileMessage = jest.fn(() => messageX);
+  groupManager.addMessageToRealmOnly = jest.fn();
+  groupManager.findById = jest.fn(() => null);
+  groupManager.buildReplyTemplate = jest.fn();
+  appManager.app = { isServiceConnected: true, host: 'demo.mongrov.com' };
+  expect.assertions(3);
+  await chatTaskManager.uploadMedia([{ data, rid, isImage: true, desc, replyMessageId }]);
+  expect(groupManager.findById).toBeCalled();
+  expect(groupManager.buildReplyTemplate).not.toBeCalled();
+  expect(RC.uploadFile.mock.calls.length).toBe(1);
 });
 
 describe('chatTaskManager sends typing notification', () => {
@@ -1541,206 +1564,5 @@ describe('chatTaskManager starts video conference', () => {
     expect.assertions(1);
     await chatTaskManager.startVideoConference(groupId);
     expect(RC.startVideoConference.mock.calls.length).toBe(1);
-  });
-});
-
-describe('chatTaskManager _getBackgroundGroups', () => {
-  it('chatTaskManager _getBackgroundGroups fails at fetchChannels', async () => {
-    RC.fetchChannels = jest.fn(() => Promise.reject(mockError));
-    groupManager.addAll = jest.fn();
-    groupManager.sortedList = [];
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-
-    expect.assertions(4);
-    await chatTaskManager._getBackgroundGroups();
-    expect(RC.fetchChannels.mock.calls.length).toBe(1);
-    expect(groupManager.addAll.mock.calls.length).toBe(0);
-    expect(appManager.logError.mock.calls.length).toBe(1);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(false);
-  });
-
-  it('chatTaskManager _getBackgroundGroups fails at addAll', async () => {
-    RC.fetchChannels = jest.fn(() => {});
-    groupManager.addAll = jest.fn(() => Promise.reject(mockError));
-    groupManager.sortedList = [];
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-
-    expect.assertions(4);
-    await chatTaskManager._getBackgroundGroups();
-    expect(RC.fetchChannels.mock.calls.length).toBe(1);
-    expect(groupManager.addAll.mock.calls.length).toBe(1);
-    expect(appManager.logError.mock.calls.length).toBe(1);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(false);
-  });
-
-  it('chatTaskManager _getBackgroundGroups get groups', async () => {
-    RC.fetchChannels = jest.fn(() => {});
-    groupManager.addAll = jest.fn();
-    const groupListInDB = {
-      '0': { _id: 'abcd' },
-      '1': { _id: 'def' },
-      '2': { _id: 'ghi' },
-    };
-    groupManager.sortedList = groupListInDB;
-    userManager.loggedInUser = { _id: 'USER011111' };
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager._fetchBackgroundGroups = false;
-    chatTaskManager.fetchBackgroundMessageJob = jest.fn();
-
-    expect.assertions(5);
-    await chatTaskManager._getBackgroundGroups();
-    expect(RC.fetchChannels.mock.calls.length).toBe(1);
-    expect(groupManager.addAll.mock.calls.length).toBe(1);
-    expect(appManager.logError.mock.calls.length).toBe(0);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(true);
-    expect(chatTaskManager.fetchBackgroundMessageJob).toBeCalledTimes(3);
-  });
-
-  it('chatTaskManager _getBackgroundGroups in progress', async () => {
-    RC.fetchChannels = jest.fn(() => {});
-    groupManager.addAll = jest.fn();
-    const groupListInDB = {
-      '0': { _id: 'abcd' },
-      '1': { _id: 'def' },
-      '2': { _id: 'ghi' },
-    };
-    groupManager.sortedList = groupListInDB;
-    userManager.loggedInUser = { _id: 'USER011111' };
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager._fetchBackgroundGroups = true;
-    chatTaskManager.fetchBackgroundMessageJob = jest.fn();
-
-    expect.assertions(5);
-    await chatTaskManager._getBackgroundGroups();
-    expect(RC.fetchChannels.mock.calls.length).toBe(0);
-    expect(groupManager.addAll.mock.calls.length).toBe(0);
-    expect(appManager.logError.mock.calls.length).toBe(0);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(true);
-    expect(chatTaskManager.fetchBackgroundMessageJob).toBeCalledTimes(0);
-  });
-});
-
-describe('chatTaskManager _getBackgroundMessages', () => {
-  it('chatTaskManager _getBackgroundMessages fails at getLastMessage', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn();
-    groupManager.getLastMessage = jest.fn(() => Promise.reject(mockError));
-    groupManager.addBulkMessages = jest.fn();
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-
-    expect.assertions(4);
-    await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(0);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(0);
-    expect(appManager.logError.mock.calls.length).toBe(1);
-  });
-
-  it('chatTaskManager _getBackgroundMessages fails at fetchCurrentRoomMessages', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn(() => Promise.reject(mockError));
-    const lastmessage = { _id: 'MSG011111', text: 'hey there', createdAt: new Date() };
-    groupManager.getLastMessage = jest.fn(() => lastmessage);
-    groupManager.addBulkMessages = jest.fn();
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-
-    expect.assertions(4);
-    await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(1);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(0);
-    expect(appManager.logError.mock.calls.length).toBe(1);
-  });
-
-  it('chatTaskManager _getBackgroundMessages - with lastMessageAt', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn(() => ({
-      messages: [{ _id: 'MSG100', text: 'message100' }, { _id: 'MSG101', text: 'message101' }],
-    }));
-    const lastmessage = { _id: 'MSG011111', text: 'hey there', createdAt: new Date() };
-    const groupObj = { _id: 'XT87kg1', name: 'super power', unread: 212 };
-    groupManager.getLastMessage = jest.fn(() => lastmessage);
-    groupManager.addBulkMessages = jest.fn(() => groupObj);
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager.bgGroupLength = 5;
-    chatTaskManager._fetchBackgroundGroups = true;
-
-    expect.assertions(6);
-    const resultGroup = await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(1);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(1);
-    expect(chatTaskManager.bgGroupLength).toBe(4);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(true);
-    expect(resultGroup).toEqual(groupObj);
-  });
-
-  it('chatTaskManager _getBackgroundMessages - no lastMessageAt', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn(() => ({
-      messages: [{ _id: 'MSG100', text: 'message100' }, { _id: 'MSG101', text: 'message101' }],
-    }));
-    const groupObj = { _id: 'XT87kg1', name: 'super power', unread: 212 };
-    groupManager.getLastMessage = jest.fn(() => null);
-    groupManager.addBulkMessages = jest.fn(() => groupObj);
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager.bgGroupLength = 1;
-    chatTaskManager._fetchBackgroundGroups = true;
-
-    expect.assertions(6);
-    const resultGroup = await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(1);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(1);
-    expect(chatTaskManager.bgGroupLength).toBe(0);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(false);
-    expect(resultGroup).toEqual(groupObj);
-  });
-
-  it('chatTaskManager _getBackgroundMessages - no new messages on a server', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn(() => ({
-      messages: [],
-    }));
-    const groupObj = { _id: 'XT87kg1', name: 'super power', unread: 212 };
-    groupManager.getLastMessage = jest.fn(() => null);
-    groupManager.addBulkMessages = jest.fn(() => groupObj);
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager.bgGroupLength = 1;
-    chatTaskManager._fetchBackgroundGroups = true;
-
-    expect.assertions(6);
-    const resultGroup = await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(1);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(0);
-    expect(chatTaskManager.bgGroupLength).toBe(0);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(false);
-    expect(resultGroup).toBeUndefined();
-  });
-
-  it('chatTaskManager _getBackgroundMessages - with lastMessageAt, no messages on the server', async () => {
-    RC.fetchCurrentRoomMessages = jest.fn(() => null);
-    const lastmessage = { _id: 'MSG011111', text: 'hey there', createdAt: new Date() };
-    const groupObj = { _id: 'XT87kg1', name: 'super power', unread: 212 };
-    groupManager.getLastMessage = jest.fn(() => lastmessage);
-    groupManager.addBulkMessages = jest.fn(() => groupObj);
-    appManager.logError = jest.fn();
-    appManager.app = { lastSync: new Date() };
-    chatTaskManager.bgGroupLength = 5;
-    chatTaskManager._fetchBackgroundGroups = true;
-
-    expect.assertions(6);
-    const resultGroup = await chatTaskManager._getBackgroundMessages([{ _id: 'XT87kg1' }]);
-    expect(groupManager.getLastMessage).toBeCalledTimes(1);
-    expect(RC.fetchCurrentRoomMessages.mock.calls.length).toBe(1);
-    expect(groupManager.addBulkMessages.mock.calls.length).toBe(0);
-    expect(chatTaskManager.bgGroupLength).toBe(5);
-    expect(chatTaskManager._fetchBackgroundGroups).toBe(true);
-    expect(resultGroup).toBeUndefined();
   });
 });

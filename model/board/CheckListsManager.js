@@ -1,7 +1,8 @@
 /*
  * User Manager class
  */
-import AppUtil from '@mongrov/utils';
+import _ from 'lodash';
+import AppUtil from '@utils';
 import Constants from '../constants';
 
 const MODULE = 'addAllChecklists';
@@ -64,6 +65,18 @@ export default class CheckListsManager {
       if (checkListItems === null || checkListItems === []) return;
       this._realm.write(() => {
         const resp = checkListItems.items;
+        const clearRealmData = _.differenceBy(
+          this._realm.objects(Constants.Checklistitems),
+          resp,
+          '_id',
+        );
+        if (clearRealmData) {
+          clearRealmData.forEach((element) => {
+            this._realm.delete(
+              this._realm.objects(Constants.Checklistitems).filtered(`_id = "${element._id}"`),
+            );
+          });
+        }
         resp.forEach((list) => {
           let obj = list;
           obj = AppUtil.removeEmptyValues(obj);
@@ -88,10 +101,20 @@ export default class CheckListsManager {
 
   addChecklist(checkList) {
     try {
-      if (checkList === null || checkList === []) {
-        this._realm.delete(this._realm.objects(Constants.Checklists));
-      }
+      if (checkList === null || checkList === []) return;
       this._realm.write(() => {
+        const clearRealmData = _.differenceBy(
+          this._realm.objects(Constants.Checklists),
+          checkList,
+          '_id',
+        );
+        if (clearRealmData) {
+          clearRealmData.forEach((element) => {
+            this._realm.delete(
+              this._realm.objects(Constants.Checklists).filtered(`_id = "${element._id}"`),
+            );
+          });
+        }
         checkList.forEach((list) => {
           let obj = list;
           obj = AppUtil.removeEmptyValues(obj);

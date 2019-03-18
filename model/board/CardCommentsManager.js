@@ -1,6 +1,7 @@
 /*
  * User Manager class
  */
+import _ from 'lodash';
 import AppUtil from '@mongrov/utils';
 import Constants from '../constants';
 
@@ -47,6 +48,18 @@ export default class CardCommentsManager {
     try {
       if (commentList === null || commentList === []) return;
       this._realm.write(() => {
+        const clearRealmData = _.differenceBy(
+          this._realm.objects(Constants.CardComments),
+          commentList,
+          '_id',
+        );
+        if (clearRealmData) {
+          clearRealmData.forEach((element) => {
+            this._realm.delete(
+              this._realm.objects(Constants.CardComments).filtered(`_id = "${element._id}"`),
+            );
+          });
+        }
         commentList.forEach((comment) => {
           let obj = comment;
           obj = AppUtil.removeEmptyValues(obj);

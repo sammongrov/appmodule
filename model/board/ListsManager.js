@@ -1,6 +1,7 @@
 /*
  * User Manager class
  */
+import _ from 'lodash';
 import AppUtil from '@mongrov/utils';
 import Constants from '../constants';
 
@@ -61,6 +62,18 @@ export default class ListsManager {
     try {
       if (listsList === null || listsList === []) return;
       this._realm.write(() => {
+        const clearRealmData = _.differenceBy(
+          this._realm.objects(Constants.Lists),
+          listsList,
+          '_id',
+        );
+        if (clearRealmData) {
+          clearRealmData.forEach((element) => {
+            this._realm.delete(
+              this._realm.objects(Constants.Lists).filtered(`_id = "${element._id}"`),
+            );
+          });
+        }
         listsList.forEach((lists) => {
           var obj = lists;
           obj = AppUtil.removeEmptyValues(obj);
@@ -70,6 +83,7 @@ export default class ListsManager {
               title: obj.title,
               boardId: obj.boardId,
               createdAt: obj.createdAt,
+              sort: obj.sort,
             };
             this._realm.create(Constants.Lists, objToStore, true);
           }

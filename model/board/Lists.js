@@ -13,6 +13,7 @@ const ListsSchema = {
     title: 'string',
     boardId: 'string',
     createdAt: { type: 'date', optional: true },
+    sort: { type: 'int', default: 0 },
   },
 };
 export default class Lists {}

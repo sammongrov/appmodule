@@ -275,7 +275,7 @@ export default class BoardTaskManager {
             if (error) {
               this._logError(null, JOB_CREATE_LIST, error.toString());
             }
-            this._dbManager.lists.addLists(res);
+            console.log('JOB_CREATE_LIST--res', res);
           });
         } catch (error) {
           this._logError(null, JOB_CREATE_LIST, error.toString());
@@ -299,7 +299,7 @@ export default class BoardTaskManager {
             if (error) {
               this._logError(null, JOB_CREATE_CARD, error.toString());
             }
-            this._dbManager.card.addUserTasks(res);
+            console.log('JOB_CREATE_CARD--res', res);
           });
         } catch (error) {
           this._logError(null, JOB_CREATE_CARD, error.toString());
@@ -325,7 +325,7 @@ export default class BoardTaskManager {
               if (error) {
                 this._logError(null, JOB_CREATE_CHECKLIST, error.toString());
               }
-              this._dbManager.checklists.addChecklist(res);
+              console.log('JOB_CREATE_CHECKLIST--res', res);
             },
           );
         } catch (error) {
@@ -352,7 +352,7 @@ export default class BoardTaskManager {
               if (error) {
                 this._logError(null, JOB_CREATE_CHECKLISTITEM, error.toString());
               }
-              this._dbManager.checklists.addCheckListItems(res);
+              console.log('JOB_CREATE_CHECKLISTITEM--res', res);
             },
           );
         } catch (error) {
@@ -377,7 +377,7 @@ export default class BoardTaskManager {
             if (error) {
               this._logError(null, JOB_CREATE_COMMENT, error.toString());
             }
-            this._dbManager.cardComments.addCardComments(res);
+            console.log('JOB_CREATE_COMMENT--res', res);
           });
         } catch (error) {
           this._logError(null, JOB_CREATE_COMMENT, error.toString());
@@ -401,7 +401,7 @@ export default class BoardTaskManager {
             if (error) {
               this._logError(null, JOB_UPDATE_LIST, error.toString());
             }
-            this._dbManager.lists.addLists(res);
+            console.log('JOB_UPDATE_LIST--res', res);
           });
         } catch (error) {
           this._logError(null, JOB_UPDATE_LIST, error.toString());
@@ -425,7 +425,7 @@ export default class BoardTaskManager {
             if (error) {
               this._logError(null, JOB_UPDATE_CARD, error.toString());
             }
-            this._dbManager.card.addUserTasks(res);
+            console.log('JOB_UPDATE_CARD--res', res);
           });
         } catch (error) {
           this._logError(null, JOB_UPDATE_CARD, error.toString());
@@ -451,7 +451,7 @@ export default class BoardTaskManager {
               if (error) {
                 this._logError(null, JOB_UPDATE_CHECKLIST, error.toString());
               }
-              this._dbManager.checklists.addChecklist(res);
+              console.log('JOB_UPDATE_CHECKLIST--res', res);
             },
           );
         } catch (error) {
@@ -478,7 +478,7 @@ export default class BoardTaskManager {
               if (error) {
                 this._logError(null, JOB_UPDATE_CHECKLISTITEM, error.toString());
               }
-              this._dbManager.checklists.addCheckListItems(res);
+              console.log('JOB_UPDATE_CHECKLISTITEM--res', res);
             },
           );
         } catch (error) {

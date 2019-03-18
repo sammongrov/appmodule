@@ -403,7 +403,11 @@ export default class GroupManager {
               ? `${msg.attachments[i].author_name} - ${msg.attachments[i].text}\n`
               : `${msg.attachments[i].text}\n`;
           }
-        } else {
+        } else if (
+          msg.attachments &&
+          msg.attachments.length > 0 &&
+          msg.attachments[0].description
+        ) {
           message.text += `${msg.attachments[0].description}`;
         }
       }
@@ -613,13 +617,18 @@ export default class GroupManager {
             groupUser = this._realm.create(Constants.User, msgUser, true);
             message.user = groupUser;
             if (msg.attachments) {
+              // console.log("MESSAGE ATTACHEMENT IN BULK == ",msg.attachments);
               if (msg.bot) {
                 for (let i = 0; i < msg.attachments.length; i += 1) {
                   message.text += msg.attachments[i].author_name
                     ? `${msg.attachments[i].author_name} - ${msg.attachments[i].text}\n`
                     : `${msg.attachments[i].text}\n`;
                 }
-              } else if (msg.attachments[0].description) {
+              } else if (
+                msg.attachments &&
+                msg.attachments.length > 0 &&
+                msg.attachments[0].description
+              ) {
                 message.text += `${msg.attachments[0].description}`;
                 // console.log('APPENDED', `${msg.attachments[0].description}`);
               }
@@ -725,7 +734,11 @@ export default class GroupManager {
                     - ${msg.attachments[i].text}\n`
                     : `${msg.attachments[i].text}\n`;
                 }
-              } else if (msg.attachments[0].description) {
+              } else if (
+                msg.attachments &&
+                msg.attachments.length > 0 &&
+                msg.attachments[0].description
+              ) {
                 message.text += `${msg.attachments[0].description}`;
               }
             }
@@ -914,9 +927,10 @@ export default class GroupManager {
   };
 
   buildFileMessage = (args) => {
-    const { data, rid, isImage, desc } = args;
+    const { data, rid, isImage, desc, replyMessageId } = args;
     const _id = Random.id();
     const user = this.userManager.loggedInUser;
+    const isReply = !!replyMessageId;
     let type;
     if (isImage) {
       type = Constants.M_TYPE_IMAGE;
@@ -929,9 +943,10 @@ export default class GroupManager {
     return {
       _id,
       user,
+      replyMessageId: replyMessageId || null,
       group: rid,
       type,
-      isReply: false,
+      isReply,
       status: Constants.M_LOCAL,
       text: isImage ? desc : '',
       image: isImage ? data.uri : null,
@@ -1095,5 +1110,28 @@ export default class GroupManager {
       return childMessages.length;
     }
     return 0;
+  };
+
+  findAllChildMessages = (messages, rootMsgId) => {
+    // returns array of child messages of the thread
+    const isChildOfRoot = (messageId, parentMsgIdSet) => {
+      // console.log('PARENT MESSAGES', parentMsgIdSet);
+      const message = this.findMessageById(messageId);
+      // console.log('MESSAGE', message);
+      if (message && message.isReply && message.replyMessageId) {
+        if (parentMsgIdSet.has(message.replyMessageId)) {
+          parentMsgIdSet.add(message._id);
+          return true;
+        }
+        return isChildOfRoot(message.replyMessageId, parentMsgIdSet);
+      }
+      return false;
+    };
+
+    const parentsIdSet = new Set([rootMsgId]);
+    const filteredMessages = messages.filter((msg) => isChildOfRoot(msg._id, parentsIdSet));
+    // console.log('CHILD MESSAGES', filteredMessages);
+    return filteredMessages;
+    // return messages.filter((msg) => isChildOfRoot(msg, parentsIdSet));
   };
 }

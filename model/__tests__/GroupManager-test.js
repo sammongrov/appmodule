@@ -1,4 +1,5 @@
 import 'react-native';
+import CodePush from 'react-native-code-push';
 import Realm from './_realm';
 import Constants from '../constants';
 import GroupManager from '../GroupManager';
@@ -907,7 +908,7 @@ describe('tests with non-empty db', () => {
   });
 });
 
-it('add message to realm Only ', async () => {
+it('add message to realm Only - text message', async () => {
   const message = {
     _id: '3TCbKtGNiRPsg6GxV',
     rid: 'yYBi36Mj6ihDimPZw',
@@ -915,7 +916,7 @@ it('add message to realm Only ', async () => {
     text: 'Test @viswa ',
     msg: 'Test @viswa ',
     ts: new Date(),
-    u: {
+    user: {
       _id: 'Ri9cohELZeCwxmtvd',
       username: 'mohan',
       name: 'Mohanasundaram Jemini',
@@ -1413,16 +1414,47 @@ it('groupManager getGroupRoles', async () => {
   expect(Object.keys(getGroupRoles).length).toBeGreaterThan(0);
 });
 
+it('groupManager buildFileMessage - audio file', () => {
+  const args = {
+    data: {
+      uri: '//audio/recording1.mp4',
+    },
+    rid: 'RtbgJUHM7&GHNJ',
+    isImage: false,
+    desc: 'Audio Message',
+    replyMessageId: 'XCXCNOP1234L',
+  };
+  const buildFileMessage = groupManager.buildFileMessage(args);
+  expect(buildFileMessage.remoteFile).toMatch(args.data.uri);
+  expect(buildFileMessage.type).toBe(Constants.M_TYPE_AUDIO);
+});
+
 it('groupManager buildFileMessage', () => {
   const args = {
     data: {
-      uri: '',
+      uri: '//images/camera/img123.jpg',
     },
     rid: 'RtbgJUHM7&GHNJ',
     isImage: true,
   };
   const buildFileMessage = groupManager.buildFileMessage(args);
-  expect(buildFileMessage).toBeInstanceOf(Object);
+  expect(buildFileMessage.image).toMatch(args.data.uri);
+  expect(buildFileMessage.type).toBe(Constants.M_TYPE_IMAGE);
+});
+
+it('groupManager buildFileMessage - video file', () => {
+  const args = {
+    data: {
+      uri: '//video/recording2.mp4',
+    },
+    rid: 'RtbgJUHM7&GHNJ',
+    isImage: false,
+    desc: 'Video Message',
+    replyMessageId: 'XCXCNOP1234L',
+  };
+  const buildFileMessage = groupManager.buildFileMessage(args);
+  expect(buildFileMessage.remoteFile).toMatch(args.data.uri);
+  expect(buildFileMessage.type).toBe(Constants.M_TYPE_VIDEO);
 });
 
 it('groupManager buildTextMessage', () => {
@@ -1496,6 +1528,42 @@ it('groupManager buildThreadedMessage with group obj c', () => {
   expect(buildThreadedMessage).toBeInstanceOf(Object);
 });
 
+it('groupManager buildReplyTemplate - for a direct group', () => {
+  const args = {
+    groupObj: { type: Constants.G_DIRECT },
+    replyMsgId: 'XXXXOOOO5551',
+    message: { text: "Let's do it again..." },
+    serverURL: 'demo.mongrov.com',
+  };
+  const threadedMessage = groupManager.buildReplyTemplate(args);
+  expect(threadedMessage).toMatch(args.message.text);
+  expect(threadedMessage).toMatch('direct');
+});
+
+it('groupManager buildReplyTemplate - for a private group', () => {
+  const args = {
+    groupObj: { type: Constants.G_PRIVATE },
+    replyMsgId: 'XXXXOOOO5551',
+    message: { text: 'Nice job you did last Friday. I appreciate it.' },
+    serverURL: 'demo.mongrov.com',
+  };
+  const threadedMessage = groupManager.buildReplyTemplate(args);
+  expect(threadedMessage).toMatch(args.message.text);
+  expect(threadedMessage).toMatch('group');
+});
+
+it('groupManager buildReplyTemplate - for a public group', () => {
+  const args = {
+    groupObj: { type: Constants.G_PUBLIC },
+    replyMsgId: 'XXXXOOOO5551',
+    message: { text: 'I found 0 bugs' },
+    serverURL: 'demo.mongrov.com',
+  };
+  const threadedMessage = groupManager.buildReplyTemplate(args);
+  expect(threadedMessage).toMatch(args.message.text);
+  expect(threadedMessage).toMatch('channel');
+});
+
 it('groupManager finds a messages by id', () => {
   // message is in db
   const msgId1 = '3TCbKtGNiRPsg6GxH';
@@ -1513,14 +1581,28 @@ it('groupManager finds a findRootMessage', () => {
   // message is in db
   const msgId1 = '3TCbKtGNiRPsg6GxH';
   const msgId2 = '3TCbKtGNiRPsg6GxY';
+  const addedMessage = {
+    _id: 'XOXOXOXOX123',
+    group: 'yYBi36Mj6ihDimPZw',
+    replyMessageId: '3TCbKtGNiRPsg6GxH',
+    isReply: true,
+    text: 'test reply',
+    createdAt: new Date(),
+  };
+
+  groupManager._realm.write(() => {
+    groupManager._realm.create(Constants.Message, addedMessage);
+  });
 
   const message1 = groupManager.findRootMessage(msgId1);
   expect(message1).toBeInstanceOf(Object);
   expect(message1._id).toMatch(msgId1);
 
   const message2 = groupManager.findRootMessage(msgId2);
-  expect(message2).toBeInstanceOf(Object);
-  expect(message2._id).toMatch(msgId2);
+  expect(message2).toBeNull();
+
+  const message3 = groupManager.findRootMessage(addedMessage._id);
+  expect(message3._id).toMatch(addedMessage.replyMessageId);
 });
 
 it('groupManager gets first message', () => {
@@ -1589,13 +1671,16 @@ it('groupManager setFileUploadPercent', () => {
 });
 
 it('groupManager getNumOfMessageReplies', () => {
-  groupManager.getNumOfMessageReplies('message._id', 'CAT7891yi7');
-  const updatedMessage = groupManager.getGroupMessages('message._id');
-  const findmessage = groupManager.findMessageById('123-XXX-234-YYY');
-
-  expect(updatedMessage).toBe('CAT7891yi7');
-  expect(findmessage).toBe('CAT7891yi7');
+  // console.log(groupManager._realm.objects(Constants.Message));
+  // console.log(groupManager.getGroupMessages('yYBi36Mj6ihDimPZw'));
+  const numReplies1 = groupManager.getNumOfMessageReplies('3TCbKtGNiRPsg6GxH', 'yYBi36Mj6ihDimPZw');
+  const numReplies2 = groupManager.getNumOfMessageReplies('3TCbKtGNiRPsg6GrU', 'XT87kg1');
+  const numReplies3 = groupManager.getNumOfMessageReplies('3TCbKtGNiRPsg6GrU', 'XT87kg22');
+  expect(numReplies1).toBe(1);
+  expect(numReplies2).toBe(0);
+  expect(numReplies3).toBe(0);
 });
+
 it('groupManager emojiText', () => {
   const emojiText = groupManager.unemojifyMessageText('123-XXX-234-YYY');
   expect(emojiText).toBe('123-XXX-234-YYY');
@@ -1613,9 +1698,53 @@ it('groupManager get goup by ID', () => {
   expect(group).toBeTruthy();
 });
 
-it('groupManager updateNoMoreMessages of a group', () => {
+it('groupManager calls updateNoMoreMessages - a group is in db', () => {
   groupManager.updateNoMoreMessages('CAT7891yi7');
-  const updatedMessage = groupManager.findMessageById('CAT7891yi7');
-  // expect(updatedGroup.avatarUpdatedAt).toEqual(expect.any(Date));
-  expect(updatedMessage).toBeTruthy();
+  const updatedGroup = groupManager.findById('CAT7891yi7');
+  expect(updatedGroup.moreMessages).toBe(false);
+});
+
+it('groupManager calls updateNoMoreMessages - a group is not in db', () => {
+  groupManager.updateNoMoreMessages('CAT7891y81');
+  const updatedGroup = groupManager.findById('CAT7891y81');
+  expect(updatedGroup).toBeNull();
+});
+
+it('groupManager calls findAllChildMessages', () => {
+  const messages = groupManager.getGroupMessages('yYBi36Mj6ihDimPZw');
+  const result = groupManager.findAllChildMessages(messages, '3TCbKtGNiRPsg6GxH');
+  expect(result[0]._id).toMatch('XOXOXOXOX123');
+});
+
+it('groupManager calls addBotListner', () => {
+  const botCb = () => {};
+  groupManager.addBotListner(botCb);
+  expect(groupManager.botCb).toEqual(botCb);
+});
+
+it('groupManager calls removeBotListner', () => {
+  groupManager.removeBotListner();
+  expect(groupManager.botCb).toBeNull();
+});
+
+it('groupManager calls groupListner - groupCallback is called', () => {
+  groupManager._app.appState = true;
+  groupManager.groupCallback = jest.fn();
+  groupManager.groupListner();
+  expect(groupManager.groupCallback).toBeCalled();
+});
+
+it('groupManager calls groupListner - appState is false', () => {
+  groupManager._app.appState = false;
+  groupManager.groupCallback = jest.fn();
+  groupManager.groupListner();
+  expect(groupManager.groupCallback).not.toBeCalled();
+});
+
+it('groupManager calls groupListner - no groupCallback', () => {
+  CodePush.restartApp.mockClear();
+  groupManager._app.appState = true;
+  groupManager.groupCallback = null;
+  groupManager.groupListner();
+  expect(CodePush.restartApp).toBeCalled();
 });

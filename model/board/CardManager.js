@@ -1,6 +1,7 @@
 /*
  * User Manager class
  */
+import _ from 'lodash';
 import AppUtil from '@mongrov/utils';
 import Constants from '../constants';
 import { Application } from '@mongrov/config';
@@ -127,7 +128,14 @@ export default class CardManager {
       if (taskList === null || taskList === []) return;
       const cardsToFetchJsonData = [];
       this._realm.write(() => {
-        // this._realm.delete(this._realm.objects(Constants.Card));
+        const clearRealmData = _.differenceBy(this._realm.objects(Constants.Card), taskList, '_id');
+        if (clearRealmData) {
+          clearRealmData.forEach((element) => {
+            this._realm.delete(
+              this._realm.objects(Constants.Card).filtered(`_id = "${element._id}"`),
+            );
+          });
+        }
         taskList.forEach(async (task) => {
           let obj = task;
           let membersList = '';
